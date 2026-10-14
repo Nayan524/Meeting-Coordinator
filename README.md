@@ -1,4 +1,4 @@
-# Agent Relay
+# Meeting Coordinator
 
 A meeting coordination agent backed by durable workflow execution.
 
@@ -26,4 +26,36 @@ The initial prototype will use simulated calendars. Availability calculations wi
 
 ## Current status
 
-The repository contains an initial folder scaffold. The backend, agent, calendar tools, and recovery behavior are not implemented yet.
+The FastAPI foundation is implemented, including environment configuration and a liveness endpoint. The LangGraph agent, Groq integration, calendar tools, persistence, and recovery behavior are not implemented yet.
+
+## Local setup (PowerShell)
+
+Run these commands from the repository root. Python 3.11 or newer is required.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m uvicorn agent_relay.main:app --reload
+```
+
+The API runs at http://127.0.0.1:8000. Interactive API documentation is available at http://127.0.0.1:8000/docs.
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+```
+
+`GET /health` returns HTTP 200 with `{"status":"ok"}`. This confirms application liveness; it does not check calendar integrations, model providers, databases, or workers.
+
+## Configuration
+
+Settings are read from environment variables and an optional `.env` file in the working directory. Environment variables take precedence. Start the server from the repository root to load its `.env` file. Secrets must not be committed.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `APP_NAME` | `Meeting Coordinator` | Application title shown in API documentation. |
+| `ENVIRONMENT` | `development` | One of `development`, `test`, or `production`; currently metadata only. |
+| `GROQ_API_KEY` | Unset | Reserved for the upcoming agent integration; stored as a masked secret in settings. |
+| `GROQ_MODEL` | Unset | Reserved for the upcoming configurable Groq model. |
+
+Groq settings are optional for this backend foundation. No model calls are made yet. Dependencies have compatible version ranges; exact dependency locking will be added in a later step.
