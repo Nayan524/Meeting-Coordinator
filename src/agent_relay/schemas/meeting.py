@@ -25,9 +25,9 @@ class MeetingRequest(BaseModel):
         default_factory=list,
         description="Participant names or emails supplied by the user. Empty if missing.",
     )
-    duration_minutes: Annotated[int, Field(strict=True, gt=0)] = Field(
-        default=30,
-        description="Requested meeting duration in minutes; defaults to 30 if omitted.",
+    duration_minutes: Annotated[int, Field(strict=True, gt=0)] | None = Field(
+        default=None,
+        description="Requested meeting duration in minutes. Null when missing; ask for clarification.",
     )
     date: CalendarDate | None = Field(
         default=None,
@@ -36,9 +36,9 @@ class MeetingRequest(BaseModel):
             "timezone. Null when missing or ambiguous; never invent a date."
         ),
     )
-    time_preference: NonEmptyText = Field(
-        default="afternoon",
-        description="User's stated time preference; defaults to afternoon if omitted.",
+    time_preference: NonEmptyText | None = Field(
+        default=None,
+        description="User's stated time preference. Null when missing; ask for clarification.",
     )
     clarification_questions: list[NonEmptyText] = Field(
         default_factory=list,

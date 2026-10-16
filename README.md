@@ -26,7 +26,7 @@ The initial prototype will use simulated calendars. Availability calculations wi
 
 ## Current status
 
-The FastAPI foundation is implemented, including environment configuration and a liveness endpoint. The LangGraph agent, Groq integration, calendar tools, persistence, and recovery behavior are not implemented yet.
+The FastAPI foundation is implemented, including environment configuration and a liveness endpoint. A single-node LangGraph workflow now uses Groq to extract validated meeting details and clarification questions. Calendar tools, conversation continuation, persistence, and recovery are not implemented yet.
 
 ## Local setup (PowerShell)
 
@@ -55,7 +55,39 @@ Settings are read from environment variables and an optional `.env` file in the 
 | --- | --- | --- |
 | `APP_NAME` | `Meeting Coordinator` | Application title shown in API documentation. |
 | `ENVIRONMENT` | `development` | One of `development`, `test`, or `production`; currently metadata only. |
-| `GROQ_API_KEY` | Unset | Reserved for the upcoming agent integration; stored as a masked secret in settings. |
-| `GROQ_MODEL` | Unset | Reserved for the upcoming configurable Groq model. |
+| `GROQ_API_KEY` | Unset | Required for extraction; stored as a masked secret in settings. |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Model supporting Groq strict structured outputs. |
 
-Groq settings are optional for this backend foundation. No model calls are made yet. Dependencies have compatible version ranges; exact dependency locking will be added in a later step.
+The health endpoint works without Groq credentials. Extraction sends the supplied request and date/timezone context to Groq. Configure your own API key in `.env`; never commit it. Free-plan quotas depend on your Groq account. Model output is schema-validated, but semantic accuracy still requires evaluation. Dependencies have compatible version ranges; exact dependency locking will be added in a later step.
+
+## Extract a meeting request
+
+Set `GROQ_API_KEY` in your local `.env` file and restart the server. The default model is `openai/gpt-oss-120b`, listed on Groq's free plan and supporting strict JSON-schema output. You can change `GROQ_MODEL` to another compatible model.
+
+`POST /v1/meeting-requests/extract` accepts:
+
+```json
+{
+  "text": "Meet alex@example.com tomorrow for 45 minutes in the morning",
+  "current_date": "2026-10-13",
+  "timezone": "America/Los_Angeles"
+}
+```
+
+Supply the user's current local date and a valid IANA timezone. The response follows `MeetingRequest`: participants, duration in minutes, resolved date, time preference, and clarification questions. Missing duration and time preference remain null and trigger LLM-generated clarification questions. No meeting duration or time preference is assumed. Missing or ambiguous dates remain null. Participant names are not fabricated into email addresses.
+
+Try the endpoint in `/docs`. This step only extracts details: it does not access calendars, send invitations, or save conversations. Questions are returned to the caller; answering them in a continuing workflow will be implemented later.
+
+Errors: 422 for invalid input, 503 for missing credentials, 429 for provider rate limits, 504 for provider timeout, and 502 for provider failures or invalid model output. Provider error bodies and credentials are not returned to clients.
+
+## Verification
+
+Run local tests without sending requests to Groq:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Model availability and quotas: https://console.groq.com/docs/rate-limits
+
+Structured output support: https://console.groq.com/docs/structured-outputs

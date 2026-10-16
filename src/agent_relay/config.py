@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     app_name: str = Field(default="Meeting Coordinator", min_length=1)
     environment: Literal["development", "test", "production"] = "development"
     groq_api_key: SecretStr | None = None
-    groq_model: str | None = None
+    google_calendar_access_token: SecretStr | None = None
+    groq_model: str = Field(default="openai/gpt-oss-120b", min_length=1)
 
 
 @lru_cache
